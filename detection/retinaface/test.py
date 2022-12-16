@@ -12,9 +12,12 @@ scales = [1024, 1980]
 count = 1
 
 gpuid = 0
-detector = RetinaFace('./model/R50', 0, gpuid, 'net3')
+# detector = RetinaFace('./model/R50', 0, gpuid, 'net3')
+detector_path = '/Users/andersbensen/Documents/github/insightface/recognition/arcface_torch/models/retinaface-R50/R50'
+detector = RetinaFace(detector_path, 0, 0, 'net3')
 
-img = cv2.imread('t1.jpg')
+img_path = '/Users/andersbensen/Documents/university/dtu/4sem/master_thesis/database/200_full_pipeline/accepted/references/images/114485_40_M_middle eastern.png'
+img = cv2.imread(img_path)
 print(img.shape)
 im_shape = img.shape
 target_size = scales[0]
