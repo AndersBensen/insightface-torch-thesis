@@ -1,10 +1,9 @@
 torch==1.9.0
-tensorboard
+numpy
 easydict
-mxnet==1.6.0
 onnx
 sklearn
-opencv-python
+opencv-python==4.6.0.66
 scikit-image
 cython
 matplotlib

@@ -1,0 +1,45 @@
+Loaded module: ninja/1.10.1
+Loaded dependency [gcc/4.9.1]: binutils/2.29
+Loaded module: gcc/4.9.1
+
+Loading gcc/4.9.1
+  Loading requirement: binutils/2.29
+Loaded dependency [python3/3.7.11]: gcc/10.3.0-binutils-2.36.1
+Loaded module: python3/3.7.11
+
+Loading python3/3.7.11
+  Loading requirement: gcc/10.3.0-binutils-2.36.1
+Loaded module: cuda/10.2
+Loaded module: cudnn/v8.0.4.30-prod-cuda-10.2
+Loaded module: cmake/3.20.1
+Loaded module: nccl/2.7.3-1-cuda-10.2
+WARNING: Skipping mxnet as it is not installed.
+WARNING: You are using pip version 21.1; however, version 22.3.1 is available.
+You should consider upgrading via the '/work3/s210521/venvs/arcface_venv/bin/python3 -m pip install --upgrade pip' command.
+[15:06:22] src/nnvm/legacy_json_util.cc:209: Loading symbol saved by previous version v1.3.0. Attempting to upgrade...
+[15:06:22] src/nnvm/legacy_json_util.cc:217: Symbol successfully upgraded!
+[15:06:23] src/executor/graph_executor.cc:1981: Subgraph backend MKLDNN is activated.
+Traceback (most recent call last):
+  File "detect_recognize.py", line 186, in <module>
+    recognizer.load_state_dict(torch.load(recognizer_path, map_location=torch.device('cuda')))
+  File "/work3/s210521/venvs/arcface_venv/lib/python3.7/site-packages/torch/serialization.py", line 607, in load
+    return _load(opened_zipfile, map_location, pickle_module, **pickle_load_args)
+  File "/work3/s210521/venvs/arcface_venv/lib/python3.7/site-packages/torch/serialization.py", line 882, in _load
+    result = unpickler.load()
+  File "/work3/s210521/venvs/arcface_venv/lib/python3.7/site-packages/torch/serialization.py", line 857, in persistent_load
+    load_tensor(data_type, size, key, _maybe_decode_ascii(location))
+  File "/work3/s210521/venvs/arcface_venv/lib/python3.7/site-packages/torch/serialization.py", line 846, in load_tensor
+    loaded_storages[key] = restore_location(storage, location)
+  File "/work3/s210521/venvs/arcface_venv/lib/python3.7/site-packages/torch/serialization.py", line 827, in restore_location
+    return default_restore_location(storage, str(map_location))
+  File "/work3/s210521/venvs/arcface_venv/lib/python3.7/site-packages/torch/serialization.py", line 175, in default_restore_location
+    result = fn(storage, location)
+  File "/work3/s210521/venvs/arcface_venv/lib/python3.7/site-packages/torch/serialization.py", line 157, in _cuda_deserialize
+    return obj.cuda(device)
+  File "/work3/s210521/venvs/arcface_venv/lib/python3.7/site-packages/torch/_utils.py", line 79, in _cuda
+    return new_type(self.size()).copy_(self, non_blocking)
+  File "/work3/s210521/venvs/arcface_venv/lib/python3.7/site-packages/torch/cuda/__init__.py", line 528, in _lazy_new
+    return super(_CudaBase, cls).__new__(cls, *args, **kwargs)
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call,so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.

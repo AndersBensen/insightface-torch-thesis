@@ -12,13 +12,18 @@ import torch
 import glob 
 import time 
 from pathlib import Path
+# import mxnet as mx 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+import tensorflow as tf
 
 from backbones import get_model
 
 from skimage import transform as trans
 
-sys.path.append("../../detection/retinaface")
-from retinaface import RetinaFace
+# sys.path.append("../../detection/retinaface")
+# from retinaface import RetinaFace
+# import retinaface.RetinaFace as RetinaFace
 
 import matplotlib.pyplot as plt
 
@@ -90,7 +95,34 @@ def norm_crop(img, landmark, image_size=112, mode='arcface'):
     warped = cv2.warpAffine(img, M, (image_size, image_size), borderValue=0.0)
     return warped
 
-def detect(net, img):
+def detect_deepface(net, img, seed_name):
+    print("--- img shape ---")
+    print(img.shape)
+    print("-----------------")
+    resp = net.detect_faces(img)
+    nr_keys = len(resp.keys()) # check how many faces was detected
+    if nr_keys == 1:
+        detected_face = resp["face_1"]
+    else:
+        # It should not happen that more than a single face is detected per image; however if it happens you need to support it
+        # What I usually do is to take the one with the highest confidence score.
+        # Hence if it happens for your images iterate through the faces and make the detected face be the one with the highest scores
+        # Note: Some implementations make sure face_1 is always the one with the highest confidence
+
+        # raise Exception("-- Several faces detected in recognizing, handle this --")
+        print(f"-- Several faces detected in recognizing seed {seed_name}, handling this. --")
+        min_score = -1 
+        detected_face = None
+        for face in resp.keys():
+            print(f"Score: {resp[face]['score']}")
+            if resp[face]['score'] > min_score:
+                detected_face = resp[face]
+        print("-- Handled multiple faces by taking the one with the largest score. --")       
+    landmarks = np.array(list(detected_face['landmarks'].values()))  # represented as a 2d numpy array
+    aligned_image = norm_crop(img, landmarks, image_size=112, mode='arcface')
+    return aligned_image
+
+def detect(net, img, seed_name):
     im_shape = img.shape
 
     thresh = 0.8
@@ -111,7 +143,7 @@ def detect(net, img):
 
     # print(faces.shape, landmarks.shape)
     if (faces.shape[0] > 1):
-        print(" -- DETECTED MULTIPLE FACES IN DETECTION, TAKING FIRST FACE -- ")
+        print(f" -- DETECTED MULTIPLE FACES IN DETECTION OF SEED {seed_name}, TAKING FIRST FACE -- ")
 
     aligned_image = norm_crop(img, landmarks[0], image_size=112, mode='arcface')
     return aligned_image
@@ -141,22 +173,35 @@ def parse_args():
     parser.add_argument('--subfolders', type=str)
     return parser.parse_args()
 
-def save_features(base_path, detector, recognizer, subfolders):
+def save_features(base_path, detector_path, recognizer, subfolders, use_deepface=True):
     print("-"*50)
     print(f"Analyzing database {base_path}")
+    if (use_deepface):
+        print("## Using deepface ##")
+        import retinaface.RetinaFace as RetinaFace
+        detector = RetinaFace
+    else: 
+        print("## Using pure retinaface ##")
+        sys.path.append("../../detection/retinaface")
+        from retinaface import RetinaFace
+        gpu_id = -1
+        detector = RetinaFace(detector_path, 0, gpu_id, 'net3')
 
     for fold in subfolders:
         db_path = f"{base_path}/{fold}"
-        print(f" - First analyzing: {db_path}")
+        print(f" - Analyzing folder: {db_path}")
+        Path(f"{db_path}/features/").mkdir(parents=True, exist_ok=True)
         imgs = glob.glob(f"{db_path}/images/*")
         total_imgs = len(imgs)
         start_time = time.time()
         for i, img_path in enumerate(imgs):
             seed_name = img_path.split("/")[-1].split(".")[0]
             img = cv2.imread(img_path)  
-            aligned_img = detect(detector, img)
+            if (use_deepface):
+                aligned_img = detect_deepface(detector, img, seed_name)
+            else:
+                aligned_img = detect(detector, img, seed_name)
             features = recognize(recognizer, aligned_img)
-            Path(f"{db_path}/features/").mkdir(parents=True, exist_ok=True)
             features_path = f"{db_path}/features/{seed_name}.npy"
             np.save(features_path, features)
             if (i % 20 == 0):
@@ -165,11 +210,24 @@ def save_features(base_path, detector, recognizer, subfolders):
                 print(f"Finished {percent_finished}% in {time_taken} seconds.")
 
 if __name__ == "__main__":
+    print("RUNNING SCRIPT")
     args = parse_args()
 
+    print("---- CHECKING FOR GPU ----")
+    if tf.test.gpu_device_name():
+        print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
+    else:
+        print("Please install GPU version of TF")
+    print("--------------------------")
+
     detector_path = args.detector_path
-    gpu_id = 1
-    detector = RetinaFace(detector_path, 0, gpu_id, 'net3')
+    # print("yello")
+    # print(mx.context.num_gpus())
+    # gpus = [int(x) for x in os.environ["CUDA_VISIBLE_DEVICES"].split(',')]
+    # print("gpus",gpus)
+    # print("hello")
+    # gpu_id = -1
+    # detector = RetinaFace(detector_path, 0, gpu_id, 'net3')
 
     recognizer_path = args.recognizer_path
     network = 'r100'
@@ -182,4 +240,4 @@ if __name__ == "__main__":
     subfolders = args.subfolders.split(',')
     for folder in folders:
         path = f"{db_root}/{folder}"
-        save_features(path, detector, recognizer, subfolders)
+        save_features(path, detector_path, recognizer, subfolders, use_deepface=True)

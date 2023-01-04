@@ -101,3 +101,6 @@ ENV/
 .mypy_cache/
 
 .DS_Store
+
+# thesis specific
+recognition/arcface_torch/models/
